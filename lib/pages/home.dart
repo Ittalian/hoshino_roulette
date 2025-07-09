@@ -50,7 +50,7 @@ class _HomeState extends State<Home> {
         prefectures.regionLabel[region]!.contains(resort.prefecture));
     setState(() {
       for (var resort in selectedResorts) {
-        resort.isSelected = !resort.isSelected;
+        resort.isSelected = true;
       }
     });
   }
@@ -59,7 +59,7 @@ class _HomeState extends State<Home> {
     final selectedResorts = resorts.where((resort) => !resort.isDone);
     setState(() {
       for (var resort in selectedResorts) {
-        resort.isSelected = !resort.isSelected;
+        resort.isSelected = true;
       }
     });
   }
@@ -73,7 +73,7 @@ class _HomeState extends State<Home> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Roulette',
+          'Hoshino Roulette',
           style: const TextStyle(
             fontWeight: FontWeight.bold,
           ),
@@ -134,11 +134,17 @@ class _HomeState extends State<Home> {
                         itemBuilder: (BuildContext context, int index) {
                           return CheckboxListTile(
                             value: resorts[index].isSelected,
-                            title: Text(
-                              resorts[index].name,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
+                            title: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  resorts[index].name,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(resorts[index].prefecture),
+                              ],
                             ),
                             controlAffinity: ListTileControlAffinity.leading,
                             onChanged: (val) {

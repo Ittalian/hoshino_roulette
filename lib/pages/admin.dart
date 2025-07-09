@@ -10,7 +10,7 @@ class Admin extends StatefulWidget {
 }
 
 class AdminState extends State<Admin> {
-  String message = '';
+  int syncCount = 0;
   bool isLoading = false;
 
   Future<void> syncAll(BuildContext context) async {
@@ -19,11 +19,19 @@ class AdminState extends State<Admin> {
       isLoading = true;
     });
     try {
-      final syncCount = await service.syncAll();
+      syncCount = await service.syncAll();
       setState(() {
-        message = '$syncCount件を同期しました';
         isLoading = false;
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '$syncCount件のデータを同期しました',
+            textAlign: TextAlign.center,
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -31,10 +39,22 @@ class AdminState extends State<Admin> {
         ),
       );
     } catch (e) {
+      print(e);
       setState(() {
-        message = '同期に失敗しました';
         isLoading = false;
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '同期に失敗しました',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.red,
+            ),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -58,14 +78,6 @@ class AdminState extends State<Admin> {
                     onPressed: () => syncAll(context),
                     child: Icon(
                       Icons.sync,
-                    ),
-                  ),
-                  const Padding(padding: EdgeInsetsGeometry.only(top: 30)),
-                  Text(
-                    message,
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],

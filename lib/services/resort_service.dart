@@ -12,10 +12,12 @@ class ResortService {
     return querySnapshot.docs.map((doc) {
       final data = doc.data();
       return Resort(
-          resortId: doc.id,
-          name: data['name'] as String,
-          prefecture: data['prefecture'] as String,
-          isDone: data['is_done'] as bool);
+        resortId: doc.id,
+        name: data['name'] as String,
+        prefecture: data['prefecture'] as String,
+        url: data['url'] as String,
+        isDone: data['is_done'] as bool,
+      );
     }).toList();
   }
 
@@ -40,6 +42,7 @@ class ResortService {
       if (r is List && r.length >= 2) {
         final prefecture = r[0]?.toString() ?? '';
         final name = r[1]?.toString() ?? '';
+        final url = r[2]?.toString() ?? '';
         final isDone = false;
 
         final docRef = coll.doc();
@@ -53,6 +56,7 @@ class ResortService {
           batch.set(docRef, {
             'prefecture': prefecture,
             'name': name,
+            'url': url,
             'is_done': isDone,
           });
           syncCount++;
