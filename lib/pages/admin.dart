@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:roulette/pages/home.dart';
 import 'package:roulette/services/resort_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Admin extends StatefulWidget {
   const Admin();
@@ -58,6 +60,26 @@ class AdminState extends State<Admin> {
     }
   }
 
+  void linkData() async {
+    final url = Uri.parse(dotenv.get('sheet_url'));
+    if (await canLaunchUrl(url)) {
+      launchUrl(url);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'URLが存在しません',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.red,
+            ),
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,18 +89,33 @@ class AdminState extends State<Admin> {
             : Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    'データを同期',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
+                  TextButton(
+                    onPressed: () => linkData(),
+                    child: Text(
+                      'データを確認',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueAccent,
+                      ),
                     ),
                   ),
-                  const Padding(padding: EdgeInsetsGeometry.only(top: 10)),
-                  ElevatedButton(
-                    onPressed: () => syncAll(context),
-                    child: Icon(
-                      Icons.sync,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '同期',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Padding(padding: EdgeInsetsGeometry.only(left: 10)),
+                      ElevatedButton(
+                        onPressed: () => syncAll(context),
+                        child: Icon(
+                          Icons.sync,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

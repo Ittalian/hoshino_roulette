@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:roulette/models/resort.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -23,11 +24,9 @@ class ResortService {
 
   Future<int> syncAll() async {
     int syncCount = 0;
-    const _sheetUrl = 'https://sheets.googleapis.com/v4/'
-        'spreadsheets/1h6i60YFE9H_8e2G7dqqnYssXL0OyTbwxSixrwHgSLvk/'
-        'values/fs_sheet?key=AIzaSyAnjvLueXWwDJ-nxmk48bh8IU3h9cjqSkc';
+    final _sheetJsonUrl = dotenv.get('sheet_json_url');
 
-    final resp = await http.get(Uri.parse(_sheetUrl));
+    final resp = await http.get(Uri.parse(_sheetJsonUrl));
     if (resp.statusCode != 200) {
       throw Exception('スプレッドシート取得失敗: ${resp.statusCode}');
     }

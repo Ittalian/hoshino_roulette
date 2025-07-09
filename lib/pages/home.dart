@@ -1,342 +1,255 @@
+import '../models/resort.dart';
+import 'admin.dart';
+import 'roulette.dart';
+import 'setting.dart';
 import 'package:flutter/material.dart';
-import 'package:roulette/models/resort.dart';
-import 'package:roulette/pages/admin.dart';
-import 'package:roulette/pages/roulette.dart';
-import 'package:roulette/pages/setting.dart';
-import 'package:roulette/services/resort_service.dart';
+import '../services/resort_service.dart';
 import '../utils/prefectures.dart' as prefectures;
 
 class Home extends StatefulWidget {
+  const Home({Key? key}) : super(key: key);
   @override
-  _HomeState createState() => _HomeState();
+  State<Home> createState() => _HomeState();
 }
 
 class _HomeState extends State<Home> {
   List<Resort> resorts = [];
-  int index = 0;
 
   @override
   void initState() {
     super.initState();
-    fetchResorts();
+    _fetchResorts();
   }
 
-  Future<void> fetchResorts() async {
-    final resortService = ResortService();
-    resorts = await resortService.fetchAll();
-    setState(() {
-      resorts = resorts;
-    });
+  Future<void> _fetchResorts() async {
+    resorts = await ResortService().fetchAll();
+    setState(() {});
   }
 
-  void resetElem() {
+  void _toggleSelect(int i) {
+    setState(() => resorts[i].isSelected = !resorts[i].isSelected);
+  }
+
+  void _selectByRegion(String region) {
+    final set = prefectures.regionLabel[region]!;
     setState(() {
-      for (var resort in resorts) {
-        resort.isSelected = false;
+      for (var r in resorts) {
+        if (set.contains(r.prefecture)) r.isSelected = true;
       }
     });
   }
 
-  void allSelectElem() {
-    setState(() {
-      for (var resort in resorts) {
-        resort.isSelected = true;
-      }
-    });
+  void _selectByUndone() {
+    setState(() => resorts.forEach((r) => r.isSelected = !r.isDone));
   }
 
-  void selectByRegion(String region) {
-    final selectedResorts = resorts.where((resort) =>
-        prefectures.regionLabel[region]!.contains(resort.prefecture));
-    setState(() {
-      for (var resort in selectedResorts) {
-        resort.isSelected = true;
-      }
-    });
-  }
-
-  void selectByIsDone() {
-    final selectedResorts = resorts.where((resort) => !resort.isDone);
-    setState(() {
-      for (var resort in selectedResorts) {
-        resort.isSelected = true;
-      }
-    });
-  }
-
-  List<Resort> getSelectedResort() {
-    return resorts.where((resort) => resort.isSelected).toList();
-  }
+  List<Resort> get _selected => resorts.where((r) => r.isSelected).toList();
 
   @override
   Widget build(BuildContext context) {
+    final bgColor = const Color(0xFFFFF3F8);
+    final appBarColor = const Color(0xFFCFFAEB);
+    final chipColors = {
+      '関東': Colors.pink.shade100,
+      '東北': Colors.blue.shade100,
+      '中部': Colors.green.shade100,
+      '近畿': Colors.orange.shade100,
+      '中国': Colors.grey.shade300,
+      '四国': Colors.teal.shade100,
+      '九州': Colors.purple.shade100,
+      '未到': Colors.pink.shade200,
+    };
+
     return Scaffold(
+      backgroundColor: bgColor,
       appBar: AppBar(
-        title: Text(
-          'Hoshino Roulette',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        backgroundColor: appBarColor,
         elevation: 0,
-        backgroundColor: const Color.fromARGB(255, 144, 205, 255),
+        title: const Text('Hoshino Roulette',
+            style: TextStyle(color: Colors.pinkAccent)),
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              switch (value) {
-                case 'admin':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => Admin(),
-                    ),
-                  );
-                  break;
-                case 'setting':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => Setting(
-                        resorts: resorts,
-                      ),
-                    ),
-                  );
-                  break;
+          IconButton(
+            icon: const Icon(Icons.more_vert, color: Colors.pinkAccent),
+            onPressed: () => showMenu<String>(
+              context: context,
+              position: const RelativeRect.fromLTRB(1000, 80, 0, 0),
+              items: const [
+                PopupMenuItem(
+                    value: 'admin',
+                    child:
+                        Text('管理', style: TextStyle(color: Colors.pinkAccent))),
+                PopupMenuItem(
+                    value: 'setting',
+                    child:
+                        Text('設定', style: TextStyle(color: Colors.pinkAccent))),
+              ],
+            ).then((v) {
+              if (v == 'admin') {
+                Navigator.push(
+                    context, MaterialPageRoute(builder: (_) => const Admin()));
               }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'admin',
-                child: Text('管理'),
-              ),
-              const PopupMenuItem(
-                value: 'setting',
-                child: Text('設定'),
-              ),
-            ],
+              if (v == 'setting') {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => Setting(resorts: resorts)));
+              }
+            }),
           ),
         ],
       ),
-      body: Center(
+      body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
+          children: [
             Expanded(
-              child: Container(
-                color: Colors.blue[100],
-                child: Column(
-                  children: [
-                    Expanded(
-                      flex: 6,
-                      child: ListView.builder(
-                        itemCount: resorts.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          return CheckboxListTile(
-                            value: resorts[index].isSelected,
-                            title: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  resorts[index].name,
-                                  style: TextStyle(
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.pinkAccent.withValues(alpha: 0.5),
+                        blurRadius: 10,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: ListView.builder(
+                    itemCount: resorts.length,
+                    itemBuilder: (ctx, i) {
+                      final r = resorts[i];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        elevation: r.isSelected ? 6 : 2,
+                        shadowColor: Colors.pinkAccent.withValues(alpha: 0.5),
+                        child: ListTile(
+                          leading: Checkbox(
+                            activeColor: Colors.pinkAccent,
+                            value: r.isSelected,
+                            onChanged: (_) => _toggleSelect(i),
+                          ),
+                          title: Text(r.name,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text(r.prefecture),
+                          onTap: () => _toggleSelect(i),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: chipColors.entries
+                        .take(4)
+                        .map((e) => Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4),
+                              child: ActionChip(
+                                label: Text(
+                                  e.key,
+                                  style: const TextStyle(
+                                    color: Color.fromARGB(255, 66, 66, 66),
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                Text(resorts[index].prefecture),
-                              ],
-                            ),
-                            controlAffinity: ListTileControlAffinity.leading,
-                            onChanged: (val) {
-                              setState(() {
-                                resorts[index].isSelected = val!;
-                              });
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                    Expanded(
-                      flex: 4,
-                      child: Container(
-                        padding: const EdgeInsets.all(25),
-                        color: Colors.white,
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: FloatingActionButton(
-                                    backgroundColor: Colors.cyanAccent,
-                                    heroTag: '関東地方',
-                                    child: Text(
-                                      '関東',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    onPressed: () => selectByRegion('関東'),
+                                backgroundColor: e.value,
+                                elevation: 4,
+                                onPressed: () {
+                                  if (e.key == '未到') {
+                                    _selectByUndone();
+                                  } else {
+                                    _selectByRegion(e.key);
+                                  }
+                                },
+                              ),
+                            ))
+                        .toList(),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: chipColors.entries
+                        .skip(4)
+                        .map((e) => Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4),
+                              child: ActionChip(
+                                label: Text(
+                                  e.key,
+                                  style: const TextStyle(
+                                    color: Color.fromARGB(255, 66, 66, 66),
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: FloatingActionButton(
-                                    backgroundColor: Colors.blue,
-                                    heroTag: '東北地方',
-                                    child: Text(
-                                      '東北',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    onPressed: () => selectByRegion('東北'),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: FloatingActionButton(
-                                    backgroundColor: Colors.green,
-                                    heroTag: '中部地方',
-                                    child: Text(
-                                      '中部',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    onPressed: () => selectByRegion('中部'),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: FloatingActionButton(
-                                    backgroundColor: Colors.orange,
-                                    heroTag: '近畿地方',
-                                    child: Text(
-                                      '近畿',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    onPressed: () => selectByRegion('近畿'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: FloatingActionButton(
-                                    backgroundColor: Colors.grey,
-                                    heroTag: '中国地方',
-                                    child: Text(
-                                      '中国',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    onPressed: () => selectByRegion('中国'),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: FloatingActionButton(
-                                    backgroundColor: Colors.lightGreen,
-                                    heroTag: '四国地方',
-                                    child: Text(
-                                      '四国',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    onPressed: () => selectByRegion('四国'),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: FloatingActionButton(
-                                    backgroundColor: Colors.yellow,
-                                    heroTag: '九州地方',
-                                    child: Text(
-                                      '九州',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    onPressed: () => selectByRegion('九州'),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: FloatingActionButton(
-                                    backgroundColor: Colors.redAccent,
-                                    heroTag: 'まだ行っていない',
-                                    child: Text(
-                                      '未到',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    onPressed: () => selectByIsDone(),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: FloatingActionButton(
-                                    heroTag: 'reset',
-                                    child: Icon(Icons.toggle_off_outlined),
-                                    onPressed: () {
-                                      resetElem();
-                                    },
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: FloatingActionButton(
-                                    heroTag: 'allSelect',
-                                    child: Icon(Icons.toggle_on),
-                                    onPressed: () {
-                                      allSelectElem();
-                                    },
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: FloatingActionButton(
-                                    backgroundColor: Colors.pink[300],
-                                    heroTag: 'start',
-                                    child: Icon(Icons.play_arrow),
-                                    onPressed: () {
-                                      final selectedResorts =
-                                          getSelectedResort();
-                                      if (selectedResorts.length > 1) {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => Roulette(
-                                                resorts: selectedResorts),
-                                          ),
-                                        );
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                                backgroundColor: e.value,
+                                elevation: 4,
+                                onPressed: () {
+                                  if (e.key == '未到') {
+                                    _selectByUndone();
+                                  } else {
+                                    _selectByRegion(e.key);
+                                  }
+                                },
+                              ),
+                            ))
+                        .toList(),
+                  ),
+                ],
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  FloatingActionButton(
+                    heroTag: 'reset',
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.pinkAccent,
+                    onPressed: () => setState(
+                        () => resorts.forEach((r) => r.isSelected = false)),
+                    child: const Icon(Icons.clear),
+                  ),
+                  const Padding(padding: EdgeInsetsGeometry.only(left: 20)),
+                  FloatingActionButton(
+                    heroTag: 'all',
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.pinkAccent,
+                    onPressed: () => setState(
+                        () => resorts.forEach((r) => r.isSelected = true)),
+                    child: const Icon(Icons.select_all),
+                  ),
+                  const Padding(padding: EdgeInsetsGeometry.only(right: 20)),
+                  FloatingActionButton(
+                    heroTag: 'start',
+                    backgroundColor: Colors.pinkAccent,
+                    onPressed: () {
+                      final sel = _selected;
+                      if (sel.length > 1) {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => Roulette(resorts: sel)));
+                      }
+                    },
+                    child: const Icon(Icons.play_arrow),
+                  ),
+                ],
               ),
             ),
           ],

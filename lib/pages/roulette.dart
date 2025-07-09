@@ -14,38 +14,41 @@ class Roulette extends StatefulWidget {
 }
 
 class _RouletteState extends State<Roulette> {
-  StreamController<int> selected = StreamController<int>();
+  final StreamController<int> selected = StreamController<int>();
   int? selectedIndex;
+  final pastelColors = [
+    const Color(0xFFFFC1E3),
+    const Color(0xFFB2EBF2),
+    const Color(0xFFFFF59D),
+    const Color(0xFFC8E6C9),
+    const Color(0xFFD1C4E9),
+    const Color(0xFFFFE0B2),
+  ];
 
   void onTapStart() {
     final index = startSpin();
     Future.delayed(const Duration(seconds: 5), () {
-      setState(() {
-        selectedIndex = index;
-      });
+      setState(() => selectedIndex = index);
     });
   }
 
   int startSpin() {
-    final index = Fortune.randomInt(0, widget.resorts.length);
-    selected.add(index);
-    return index;
+    final idx = Fortune.randomInt(0, widget.resorts.length);
+    selected.add(idx);
+    return idx;
   }
 
   Future linkOfficial(String uri) async {
-    var url = Uri.parse(uri);
+    final url = Uri.parse(uri);
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text(
             'URLが見つかりません',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.red,
-            ),
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
           ),
         ),
       );
@@ -60,65 +63,126 @@ class _RouletteState extends State<Roulette> {
 
   @override
   Widget build(BuildContext context) {
+    const bgColor = Color(0xFFFFF3F8);
+    final wheelBorder = Colors.pink.shade100;
+    final startButtonColor = Colors.pinkAccent;
+    final resultChipColor = Colors.pink.shade200;
+    final size = min(MediaQuery.of(context).size.width,
+        MediaQuery.of(context).size.height * 0.6);
+
     return Scaffold(
-      body: LayoutBuilder(builder: (context, constraints) {
-        final size = min(constraints.maxWidth, constraints.maxHeight * 0.6);
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-                width: size,
-                height: size,
-                child: Container(
-                  margin: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-                  child: FortuneWheel(
-                    animateFirst: false,
-                    selected: selected.stream,
-                    items: [
-                      for (var resort in widget.resorts)
-                        FortuneItem(child: Text(resort.name)),
-                    ],
-                    indicators: [
-                      FortuneIndicator(
-                        alignment: Alignment(0, -0.95),
-                        child: TriangleIndicator(
-                          height: 24,
-                          width: 24,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
-                )),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: onTapStart,
-              child: const Text('Start!'),
+      backgroundColor: bgColor,
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFCFFAEB),
+        elevation: 0,
+        title: const Text(
+          'Hoshino Roulette',
+          style: TextStyle(color: Colors.pinkAccent),
+        ),
+        centerTitle: true,
+      ),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: size,
+            height: size,
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: wheelBorder, width: 8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.pinkAccent.withValues(alpha: 0.2),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 48,
-              child: Center(
-                child: selectedIndex != null
-                    ? TextButton(
-                        onPressed: () =>
-                            linkOfficial(widget.resorts[selectedIndex!].url),
-                        child: Text(
-                          widget.resorts[selectedIndex!].name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: Colors.blueAccent,
-                          ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
+            child: SizedBox(
+              width: size,
+              height: size,
+              child: FortuneWheel(
+                animateFirst: false,
+                selected: selected.stream,
+                items: List.generate(widget.resorts.length, (i) {
+                  final r = widget.resorts[i];
+                  return FortuneItem(
+                    child: Text(
+                      r.name,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black,
+                      ),
+                    ),
+                    style: FortuneItemStyle(
+                      color: pastelColors[i % pastelColors.length],
+                      borderColor: Colors.white,
+                      borderWidth: 2,
+                    ),
+                  );
+                }),
+                indicators: [
+                  FortuneIndicator(
+                    alignment: const Alignment(0, -0.95),
+                    child: TriangleIndicator(
+                      height: 24,
+                      width: 24,
+                      color: Colors.pinkAccent,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-          ],
-        );
-      }),
+          ),
+
+          const SizedBox(height: 24),
+
+          ElevatedButton(
+            onPressed: onTapStart,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: startButtonColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+            ),
+            child: const Text(
+              'Start!',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 25),
+
+          SizedBox(
+            height: 48,
+            child: Center(
+              child: selectedIndex != null
+                  ? ActionChip(
+                      label: Text(
+                        widget.resorts[selectedIndex!].name,
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                      backgroundColor: resultChipColor,
+                      elevation: 4,
+                      onPressed: () =>
+                          linkOfficial(widget.resorts[selectedIndex!].url),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+        ],
+      ),
     );
   }
 }
