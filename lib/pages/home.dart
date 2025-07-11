@@ -13,7 +13,9 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  List<Resort> allResorts = [];
   List<Resort> resorts = [];
+  bool isDisplayAll = false;
 
   @override
   void initState() {
@@ -22,8 +24,10 @@ class _HomeState extends State<Home> {
   }
 
   Future<void> _fetchResorts() async {
-    resorts = await ResortService().fetchAll();
-    setState(() {});
+    allResorts = await ResortService().fetchAll();
+    setState(() {
+      resorts = allResorts.where((resort) => !resort.isDone).toList();
+    });
   }
 
   void _toggleSelect(int i) {
@@ -40,7 +44,23 @@ class _HomeState extends State<Home> {
   }
 
   void _selectByUndone() {
-    setState(() => resorts.forEach((r) => r.isSelected = !r.isDone));
+    if (isDisplayAll) {
+      setState(() {
+        final targetResorts = resorts.where((resort) => !resort.isDone).toList();
+        final expectResorts = resorts.where((resort) => resort.isDone).toList();
+        resorts = targetResorts;
+        for (var resort in expectResorts) {
+          print(resort.name);
+          resort.isSelected = false;
+        }
+        isDisplayAll = false;
+      });
+    } else {
+      setState(() {
+        resorts = allResorts;
+        isDisplayAll = true;
+      });
+    }
   }
 
   List<Resort> get _selected => resorts.where((r) => r.isSelected).toList();
@@ -57,7 +77,7 @@ class _HomeState extends State<Home> {
       '中国': Colors.grey.shade300,
       '四国': Colors.teal.shade100,
       '九州': Colors.purple.shade100,
-      '未到': Colors.pink.shade200,
+      'ALL': Colors.pink.shade200,
     };
 
     return Scaffold(
@@ -92,7 +112,7 @@ class _HomeState extends State<Home> {
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => Setting(resorts: resorts)));
+                        builder: (_) => Setting(resorts: allResorts)));
               }
             }),
           ),
@@ -146,7 +166,6 @@ class _HomeState extends State<Home> {
                 ),
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Column(
@@ -169,11 +188,7 @@ class _HomeState extends State<Home> {
                                 backgroundColor: e.value,
                                 elevation: 4,
                                 onPressed: () {
-                                  if (e.key == '未到') {
-                                    _selectByUndone();
-                                  } else {
-                                    _selectByRegion(e.key);
-                                  }
+                                  _selectByRegion(e.key);
                                 },
                               ),
                             ))
@@ -198,7 +213,7 @@ class _HomeState extends State<Home> {
                                 backgroundColor: e.value,
                                 elevation: 4,
                                 onPressed: () {
-                                  if (e.key == '未到') {
+                                  if (e.key == 'ALL') {
                                     _selectByUndone();
                                   } else {
                                     _selectByRegion(e.key);
@@ -211,7 +226,6 @@ class _HomeState extends State<Home> {
                 ],
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: Row(

@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_fortune_wheel/flutter_fortune_wheel.dart';
+import 'package:roulette/managers/audio_player_manager.dart';
 import 'package:roulette/models/resort.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -24,8 +26,16 @@ class _RouletteState extends State<Roulette> {
     const Color(0xFFD1C4E9),
     const Color(0xFFFFE0B2),
   ];
+  final AudioPlayerManager audioPlayerManager = AudioPlayerManager();
 
-  void onTapStart() {
+  @override
+  void initState() {
+    super.initState();
+    initAudioPlayer();
+  }
+
+  Future<void> onTapStart() async {
+    await audioPlayerManager.play(dotenv.get('roulette_audio_path'));
     final index = startSpin();
     Future.delayed(const Duration(seconds: 5), () {
       setState(() => selectedIndex = index);
@@ -55,9 +65,18 @@ class _RouletteState extends State<Roulette> {
     }
   }
 
+  void initAudioPlayer() {
+    audioPlayerManager.init();
+  }
+
+  void playAudio(String path) {
+    audioPlayerManager.play(path);
+  }
+
   @override
   void dispose() {
     selected.close();
+    audioPlayerManager.dispose();
     super.dispose();
   }
 
