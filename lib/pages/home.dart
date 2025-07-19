@@ -15,9 +15,21 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   List<Resort> allResorts = [];
   List<Resort> resorts = [];
-  bool isDisplayAll = false;
+  List<String> prefectureList = [];
   bool isLoading = false;
-  Map<String, bool> activeFilters = {
+
+  final chipColors = {
+    '関東': Colors.pink.shade100,
+    '東北': Colors.blue.shade100,
+    '中部': Colors.green.shade100,
+    '近畿': Colors.orange.shade100,
+    '中国': Colors.grey.shade300,
+    '四国': Colors.teal.shade100,
+    '九州': Colors.purple.shade100,
+    'ALL': Colors.pink.shade200,
+  };
+
+  Map<String, bool> activeRegion = {
     '関東': false,
     '東北': false,
     '中部': false,
@@ -28,58 +40,64 @@ class _HomeState extends State<Home> {
     'ALL': false,
   };
 
+  bool showAdvanced = false;
+  Set<String> selectedPrefs = {};
+
   @override
   void initState() {
     super.initState();
+    _getPrefectures();
     _fetchResorts();
+  }
+
+  _getPrefectures() {
+    List<String> results = [];
+    prefectures.regionLabel.values.forEach((list) => results.addAll(list));
+    setState(() {
+      prefectureList = results;
+    });
   }
 
   Future<void> _fetchResorts() async {
     setState(() => isLoading = true);
     allResorts = await ResortService().fetchAll();
     setState(() {
-      resorts = allResorts.where((resort) => !resort.isDone).toList();
+      resorts = allResorts;
       isLoading = false;
     });
   }
 
   void _toggleSelect(int i) {
-    setState(() => resorts[i].isSelected = !resorts[i].isSelected);
-  }
-
-  void _selectByRegion(String region) {
-    final set = prefectures.regionLabel[region]!;
     setState(() {
-      for (var r in resorts) {
-        if (set.contains(r.prefecture)) {
-          r.isSelected = true;
-        }
-      }
-      activeFilters[region] = true;
+      resorts[i].isSelected = !resorts[i].isSelected;
     });
   }
 
-  void _selectByUndone() {
-    if (isDisplayAll) {
-      setState(() {
-        final targetResorts =
-            resorts.where((resort) => !resort.isDone).toList();
-        final expectResorts = resorts.where((resort) => resort.isDone).toList();
-        resorts = targetResorts;
-        for (var resort in expectResorts) {
-          print(resort.name);
-          resort.isSelected = false;
+  void _onRegionTap(String region) {
+    final set = prefectures.regionLabel[region]!;
+    setState(() {
+      activeRegion[region] = true;
+      if (region != 'ALL') {
+        for (var r in resorts) {
+          if (set.contains(r.prefecture)) {
+            r.isSelected = true;
+          }
         }
-        isDisplayAll = false;
-        activeFilters['ALL'] = false;
-      });
-    } else {
-      setState(() {
-        resorts = allResorts;
-        isDisplayAll = true;
-        activeFilters['ALL'] = true;
-      });
-    }
+      }
+    });
+  }
+
+  void _onPrefectureTap(String pref) {
+    setState(() {
+      if (!selectedPrefs.contains(pref)) {
+        selectedPrefs.add(pref);
+      }
+      for (var r in resorts) {
+        if (selectedPrefs.contains(r.prefecture)) {
+          r.isSelected = true;
+        }
+      }
+    });
   }
 
   List<Resort> get _selected => resorts.where((r) => r.isSelected).toList();
@@ -88,24 +106,20 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     final bgColor = const Color(0xFFFFF3F8);
     final appBarColor = const Color(0xFFCFFAEB);
-    final chipColors = {
-      '関東': Colors.pink.shade100,
-      '東北': Colors.blue.shade100,
-      '中部': Colors.green.shade100,
-      '近畿': Colors.orange.shade100,
-      '中国': Colors.grey.shade300,
-      '四国': Colors.teal.shade100,
-      '九州': Colors.purple.shade100,
-      'ALL': Colors.pink.shade200,
-    };
+    final pink = Colors.pinkAccent;
 
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
         backgroundColor: appBarColor,
         elevation: 0,
-        title: const Text('Hoshino Roulette',
-            style: TextStyle(color: Colors.pinkAccent)),
+        title: const Text(
+          'Hoshino Roulette',
+          style: TextStyle(
+            color: Colors.pinkAccent,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.more_vert, color: Colors.pinkAccent),
@@ -144,23 +158,21 @@ class _HomeState extends State<Home> {
               child: Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.pinkAccent.withValues(alpha: 0.5),
-                        blurRadius: 10,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: isLoading
-                      ? const Center(
-                          child:
-                              Text("読み込み中...", style: TextStyle(fontSize: 16)))
-                      : ListView.builder(
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: pink.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ListView.builder(
                           itemCount: resorts.length,
                           itemBuilder: (ctx, i) {
                             final r = resorts[i];
@@ -170,11 +182,10 @@ class _HomeState extends State<Home> {
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12)),
                               elevation: r.isSelected ? 6 : 2,
-                              shadowColor:
-                                  Colors.pinkAccent.withValues(alpha: 0.5),
+                              shadowColor: pink.withValues(alpha: 0.3),
                               child: ListTile(
                                 leading: Checkbox(
-                                  activeColor: Colors.pinkAccent,
+                                  activeColor: pink,
                                   value: r.isSelected,
                                   onChanged: (_) => _toggleSelect(i),
                                 ),
@@ -187,83 +198,92 @@ class _HomeState extends State<Home> {
                             );
                           },
                         ),
+                      ),
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: chipColors.entries
+                  .take(4)
+                  .map((e) => Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: ActionChip(
+                          label: Text(
+                            e.key,
+                            style: TextStyle(
+                              color: activeRegion[e.key]!
+                                  ? Colors.white
+                                  : const Color(0xFF424242),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          backgroundColor: activeRegion[e.key]!
+                              ? Colors.pinkAccent
+                              : e.value,
+                          elevation: 4,
+                          onPressed: () => _onRegionTap(e.key),
+                        ),
+                      ))
+                  .toList(),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: chipColors.entries
+                  .skip(4)
+                  .map((e) => Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: ActionChip(
+                          label: Text(
+                            e.key,
+                            style: TextStyle(
+                              color: activeRegion[e.key]!
+                                  ? Colors.white
+                                  : const Color(0xFF424242),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          backgroundColor: activeRegion[e.key]!
+                              ? Colors.pinkAccent
+                              : e.value,
+                          elevation: 4,
+                          onPressed: () => _onRegionTap(e.key),
+                        ),
+                      ))
+                  .toList(),
+            ),
+            SwitchListTile(
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('高度な設定'),
+              activeColor: pink,
+              value: showAdvanced,
+              onChanged: (v) => setState(() => showAdvanced = v),
+            ),
+            if (showAdvanced)
+              Container(
+                height: 100,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: SingleChildScrollView(
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: prefectureList.map((pref) {
+                      final sel = selectedPrefs.contains(pref);
+                      return FilterChip(
+                        label: Text(pref,
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: sel ? Colors.white : Colors.black)),
+                        selected: sel,
+                        selectedColor: pink,
+                        backgroundColor: Colors.pink.shade50,
+                        onSelected: (_) => _onPrefectureTap(pref),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: chipColors.entries
-                        .take(4)
-                        .map(
-                          (e) => Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: ActionChip(
-                              label: Text(
-                                e.key,
-                                style: TextStyle(
-                                  color: activeFilters[e.key]!
-                                      ? Colors.white
-                                      : const Color.fromARGB(255, 66, 66, 66),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              backgroundColor: activeFilters[e.key]!
-                                  ? Colors.pinkAccent
-                                  : e.value,
-                              elevation: 4,
-                              onPressed: () {
-                                if (e.key == 'ALL') {
-                                  _selectByUndone();
-                                } else {
-                                  _selectByRegion(e.key);
-                                }
-                              },
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: chipColors.entries
-                        .skip(4)
-                        .map(
-                          (e) => Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: ActionChip(
-                              label: Text(
-                                e.key,
-                                style: TextStyle(
-                                  color: activeFilters[e.key]!
-                                      ? Colors.white
-                                      : const Color.fromARGB(255, 66, 66, 66),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              backgroundColor: activeFilters[e.key]!
-                                  ? Colors.pinkAccent
-                                  : e.value,
-                              elevation: 4,
-                              onPressed: () {
-                                if (e.key == 'ALL') {
-                                  _selectByUndone();
-                                } else {
-                                  _selectByRegion(e.key);
-                                }
-                              },
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ],
-              ),
-            ),
+            const Padding(padding: EdgeInsetsGeometry.only(top: 5)),
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: Row(
@@ -272,30 +292,28 @@ class _HomeState extends State<Home> {
                   FloatingActionButton(
                     heroTag: 'reset',
                     backgroundColor: Colors.white,
-                    foregroundColor: const Color.fromRGBO(255, 64, 129, 1),
+                    foregroundColor: pink,
                     onPressed: () => setState(() {
                       resorts.forEach((r) => r.isSelected = false);
-                      activeFilters.updateAll(
-                          (key, value) => key != 'ALL' ? false : value);
+                      activeRegion.updateAll((k, v) => false);
+                      selectedPrefs.clear();
                     }),
                     child: const Icon(Icons.clear),
                   ),
-                  const Padding(padding: EdgeInsetsGeometry.only(left: 20)),
+                  const SizedBox(width: 24),
                   FloatingActionButton(
-                    heroTag: 'all',
+                    heroTag: 'selectAll',
                     backgroundColor: Colors.white,
-                    foregroundColor: Colors.pinkAccent,
+                    foregroundColor: pink,
                     onPressed: () => setState(() {
                       resorts.forEach((r) => r.isSelected = true);
-                      activeFilters.updateAll(
-                          (key, value) => key != 'ALL' ? true : value);
                     }),
                     child: const Icon(Icons.select_all),
                   ),
-                  const Padding(padding: EdgeInsetsGeometry.only(right: 20)),
+                  const SizedBox(width: 24),
                   FloatingActionButton(
                     heroTag: 'start',
-                    backgroundColor: Colors.pinkAccent,
+                    backgroundColor: pink,
                     onPressed: () {
                       final sel = _selected;
                       if (sel.length > 1) {

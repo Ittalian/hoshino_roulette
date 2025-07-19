@@ -96,7 +96,10 @@ class _RouletteState extends State<Roulette> {
         elevation: 0,
         title: const Text(
           'Hoshino Roulette',
-          style: TextStyle(color: Colors.pinkAccent),
+          style: TextStyle(
+            color: Colors.pinkAccent,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: true,
       ),
@@ -156,9 +159,7 @@ class _RouletteState extends State<Roulette> {
               ),
             ),
           ),
-
           const SizedBox(height: 24),
-
           ElevatedButton(
             onPressed: onTapStart,
             style: ElevatedButton.styleFrom(
@@ -177,9 +178,7 @@ class _RouletteState extends State<Roulette> {
               ),
             ),
           ),
-
           const SizedBox(height: 25),
-
           SizedBox(
             height: 48,
             child: Center(
@@ -198,7 +197,6 @@ class _RouletteState extends State<Roulette> {
                   : const SizedBox.shrink(),
             ),
           ),
-
           const SizedBox(height: 20),
         ],
       ),
