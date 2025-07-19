@@ -14,6 +14,7 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   List<Resort> allResorts = [];
+  List<Resort> filteredResorts = [];
   List<Resort> resorts = [];
   List<String> prefectureList = [];
   bool isLoading = false;
@@ -26,7 +27,6 @@ class _HomeState extends State<Home> {
     '中国': Colors.grey.shade300,
     '四国': Colors.teal.shade100,
     '九州': Colors.purple.shade100,
-    'ALL': Colors.pink.shade200,
   };
 
   Map<String, bool> activeRegion = {
@@ -40,7 +40,9 @@ class _HomeState extends State<Home> {
     'ALL': false,
   };
 
-  bool showAdvanced = false;
+  bool showPrefecture = false;
+  bool showRegion = false;
+  bool showAll = false;
   Set<String> selectedPrefs = {};
 
   @override
@@ -61,8 +63,10 @@ class _HomeState extends State<Home> {
   Future<void> _fetchResorts() async {
     setState(() => isLoading = true);
     allResorts = await ResortService().fetchAll();
+    filteredResorts =
+        allResorts.where((resort) => resort.isDone == false).toList();
     setState(() {
-      resorts = allResorts;
+      resorts = filteredResorts;
       isLoading = false;
     });
   }
@@ -77,11 +81,9 @@ class _HomeState extends State<Home> {
     final set = prefectures.regionLabel[region]!;
     setState(() {
       activeRegion[region] = true;
-      if (region != 'ALL') {
-        for (var r in resorts) {
-          if (set.contains(r.prefecture)) {
-            r.isSelected = true;
-          }
+      for (var r in resorts) {
+        if (set.contains(r.prefecture)) {
+          r.isSelected = true;
         }
       }
     });
@@ -98,6 +100,16 @@ class _HomeState extends State<Home> {
         }
       }
     });
+  }
+
+  Color _getPrefectureColor(String pref) {
+    final defaultColor = Colors.grey.shade300;
+    for (final entry in prefectures.regionLabel.entries) {
+      if (entry.value.contains(pref)) {
+        return chipColors[entry.key] ?? defaultColor;
+      }
+    }
+    return defaultColor;
   }
 
   List<Resort> get _selected => resorts.where((r) => r.isSelected).toList();
@@ -201,65 +213,74 @@ class _HomeState extends State<Home> {
                       ),
               ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: chipColors.entries
-                  .take(4)
-                  .map((e) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: ActionChip(
-                          label: Text(
-                            e.key,
-                            style: TextStyle(
-                              color: activeRegion[e.key]!
-                                  ? Colors.white
-                                  : const Color(0xFF424242),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          backgroundColor: activeRegion[e.key]!
-                              ? Colors.pinkAccent
-                              : e.value,
-                          elevation: 4,
-                          onPressed: () => _onRegionTap(e.key),
-                        ),
-                      ))
-                  .toList(),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: chipColors.entries
-                  .skip(4)
-                  .map((e) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: ActionChip(
-                          label: Text(
-                            e.key,
-                            style: TextStyle(
-                              color: activeRegion[e.key]!
-                                  ? Colors.white
-                                  : const Color(0xFF424242),
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          backgroundColor: activeRegion[e.key]!
-                              ? Colors.pinkAccent
-                              : e.value,
-                          elevation: 4,
-                          onPressed: () => _onRegionTap(e.key),
-                        ),
-                      ))
-                  .toList(),
-            ),
             SwitchListTile(
               controlAffinity: ListTileControlAffinity.leading,
-              title: const Text('高度な設定'),
+              title: const Text('地方で絞り込み'),
               activeColor: pink,
-              value: showAdvanced,
-              onChanged: (v) => setState(() => showAdvanced = v),
+              value: showRegion,
+              onChanged: (v) => setState(() => showRegion = v),
             ),
-            if (showAdvanced)
+            if (showRegion)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: chipColors.entries
+                    .take(4)
+                    .map((e) => Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: ActionChip(
+                            label: Text(
+                              e.key,
+                              style: TextStyle(
+                                color: activeRegion[e.key]!
+                                    ? Colors.white
+                                    : const Color(0xFF424242),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            backgroundColor: activeRegion[e.key]!
+                                ? Colors.pinkAccent
+                                : e.value,
+                            elevation: 4,
+                            onPressed: () => _onRegionTap(e.key),
+                          ),
+                        ))
+                    .toList(),
+              ),
+            if (showRegion) const SizedBox(height: 8),
+            if (showRegion)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: chipColors.entries
+                    .skip(4)
+                    .map((e) => Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: ActionChip(
+                            label: Text(
+                              e.key,
+                              style: TextStyle(
+                                color: activeRegion[e.key]!
+                                    ? Colors.white
+                                    : const Color(0xFF424242),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            backgroundColor: activeRegion[e.key]!
+                                ? Colors.pinkAccent
+                                : e.value,
+                            elevation: 4,
+                            onPressed: () => _onRegionTap(e.key),
+                          ),
+                        ))
+                    .toList(),
+              ),
+            SwitchListTile(
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('都道府県で絞り込み'),
+              activeColor: pink,
+              value: showPrefecture,
+              onChanged: (v) => setState(() => showPrefecture = v),
+            ),
+            if (showPrefecture)
               Container(
                 height: 100,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -276,13 +297,30 @@ class _HomeState extends State<Home> {
                                 color: sel ? Colors.white : Colors.black)),
                         selected: sel,
                         selectedColor: pink,
-                        backgroundColor: Colors.pink.shade50,
+                        backgroundColor: _getPrefectureColor(pref),
                         onSelected: (_) => _onPrefectureTap(pref),
                       );
                     }).toList(),
                   ),
                 ),
               ),
+            SwitchListTile(
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('行ったところを表示'),
+              activeColor: pink,
+              value: showAll,
+              onChanged: (v) => setState(() {
+                showAll = v;
+                if (showAll) {
+                  resorts = allResorts;
+                } else {
+                  final hiddenResorts =
+                      allResorts.where((resort) => resort.isDone == true);
+                  hiddenResorts.forEach((resort) => resort.isSelected = false);
+                  resorts = filteredResorts;
+                }
+              }),
+            ),
             const Padding(padding: EdgeInsetsGeometry.only(top: 5)),
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
