@@ -48,21 +48,28 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    _getPrefectures();
     _fetchResorts();
   }
 
-  _getPrefectures() {
-    List<String> results = [];
-    prefectures.regionLabel.values.forEach((list) => results.addAll(list));
-    setState(() {
-      prefectureList = results;
-    });
-  }
+void _getPrefectures() {
+  final presentPrefs = allResorts.map((r) => r.prefecture).toSet();
+  final sorted = <String>[];
+  prefectures.regionLabel.forEach((region, prefs) {
+    for (final pref in prefs) {
+      if (presentPrefs.contains(pref)) {
+        sorted.add(pref);
+      }
+    }
+  });
+  setState(() {
+    prefectureList = sorted;
+  });
+}
 
   Future<void> _fetchResorts() async {
     setState(() => isLoading = true);
     allResorts = await ResortService().fetchAll();
+    _getPrefectures();
     filteredResorts =
         allResorts.where((resort) => resort.isDone == false).toList();
     setState(() {
@@ -95,7 +102,7 @@ class _HomeState extends State<Home> {
         selectedPrefs.add(pref);
       }
       for (var r in resorts) {
-        if (selectedPrefs.contains(r.prefecture)) {
+        if (r.prefecture == pref) {
           r.isSelected = true;
         }
       }
@@ -223,55 +230,57 @@ class _HomeState extends State<Home> {
             if (showRegion)
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: chipColors.entries
-                    .take(4)
-                    .map((e) => Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: ActionChip(
-                            label: Text(
-                              e.key,
-                              style: TextStyle(
-                                color: activeRegion[e.key]!
-                                    ? Colors.white
-                                    : const Color(0xFF424242),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            backgroundColor: activeRegion[e.key]!
-                                ? Colors.pinkAccent
-                                : e.value,
-                            elevation: 4,
-                            onPressed: () => _onRegionTap(e.key),
-                          ),
-                        ))
-                    .toList(),
+                children: chipColors.entries.take(4).map((e) {
+                  final isSelected = activeRegion[e.key] ?? false;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: FilterChip(
+                      label: Text(
+                        e.key,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF424242),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      selected: isSelected,
+                      onSelected: (_) => _onRegionTap(e.key),
+                      selectedColor: Colors.pinkAccent,
+                      backgroundColor: e.value,
+                      checkmarkColor: Colors.white,
+                      elevation: 4,
+                    ),
+                  );
+                }).toList(),
               ),
             if (showRegion) const SizedBox(height: 8),
             if (showRegion)
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: chipColors.entries
-                    .skip(4)
-                    .map((e) => Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: ActionChip(
-                            label: Text(
-                              e.key,
-                              style: TextStyle(
-                                color: activeRegion[e.key]!
-                                    ? Colors.white
-                                    : const Color(0xFF424242),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            backgroundColor: activeRegion[e.key]!
-                                ? Colors.pinkAccent
-                                : e.value,
-                            elevation: 4,
-                            onPressed: () => _onRegionTap(e.key),
-                          ),
-                        ))
-                    .toList(),
+                children: chipColors.entries.skip(4).map((e) {
+                  final isSelected = activeRegion[e.key] ?? false;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: FilterChip(
+                      label: Text(
+                        e.key,
+                        style: TextStyle(
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF424242),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      selected: isSelected,
+                      onSelected: (_) => _onRegionTap(e.key),
+                      selectedColor: Colors.pinkAccent,
+                      backgroundColor: e.value,
+                      checkmarkColor: Colors.white,
+                      elevation: 4,
+                    ),
+                  );
+                }).toList(),
               ),
             SwitchListTile(
               controlAffinity: ListTileControlAffinity.leading,
@@ -291,10 +300,14 @@ class _HomeState extends State<Home> {
                     children: prefectureList.map((pref) {
                       final sel = selectedPrefs.contains(pref);
                       return FilterChip(
-                        label: Text(pref,
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: sel ? Colors.white : Colors.black)),
+                        label: Text(
+                          pref,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: sel ? Colors.white : Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         selected: sel,
                         selectedColor: pink,
                         backgroundColor: _getPrefectureColor(pref),
