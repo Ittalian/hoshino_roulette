@@ -130,6 +130,7 @@ void _getPrefectures() {
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: appBarColor,
         elevation: 0,
         title: const Text(
