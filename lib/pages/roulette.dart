@@ -18,6 +18,8 @@ class Roulette extends StatefulWidget {
 class _RouletteState extends State<Roulette> {
   final StreamController<int> selected = StreamController<int>();
   int? selectedIndex;
+  bool isSpinning = false;
+
   final pastelColors = [
     const Color(0xFFFFC1E3),
     const Color(0xFFB2EBF2),
@@ -35,10 +37,15 @@ class _RouletteState extends State<Roulette> {
   }
 
   Future<void> onTapStart() async {
+    if (isSpinning) return;
+    setState(() => isSpinning = true);
     await audioPlayerManager.play(dotenv.get('roulette_audio_path'));
     final index = startSpin();
     Future.delayed(const Duration(seconds: 5), () {
-      setState(() => selectedIndex = index);
+      setState(() {
+        selectedIndex = index;
+        isSpinning = false;
+      });
     });
   }
 
@@ -161,20 +168,21 @@ class _RouletteState extends State<Roulette> {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: onTapStart,
+            onPressed: isSpinning ? null : onTapStart,
             style: ElevatedButton.styleFrom(
-              backgroundColor: startButtonColor,
+              backgroundColor:
+                  startButtonColor.withValues(alpha: isSpinning ? 0.9 : 1),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
             ),
-            child: const Text(
+            child: Text(
               'Start!',
               style: TextStyle(
-                color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
+                color: Colors.white.withValues(alpha: isSpinning ? 0.9 : 1),
               ),
             ),
           ),
